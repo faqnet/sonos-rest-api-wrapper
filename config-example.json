@@ -1,0 +1,7 @@
+{
+  "access_token": "xxxxxx-xxxxx-xxxxx-xxxxxx-xxxxxxxxx",
+  "token_type": "Bearer",
+  "expires_in": 86400,
+  "refresh_token": "xxxxxx-xxxxx-xxxxx-xxxxxx-xxxxxxxxx",
+  "scope": "playback-control-all"
+}
