@@ -62,7 +62,7 @@ class MySonos:
                          headers=self.base_header)
         if r.status_code == 401:
             self.refresh_token()
-            return self._post_request_to_sonos(url)
+            return self._get_request_to_sonos(url)
         else:
             return r
 
