@@ -1,4 +1,5 @@
 import json
+from enum import Enum
 
 import requests
 
@@ -12,7 +13,8 @@ class MySonos:
         self.__bearerToken = "Basic YjM1MmVjODQtODVhYS00ODkyLWI5NDUtNTkzMzllNGE4YWZkOmQ1MDRmZjE1LTZhZmYtNDMxYy1hMTRjLTIwM2RhODJiOTE4Mw=="
         self.base_url = "https://api.ws.sonos.com/control/api/v1"
         self.base_header = {"Authorization": "Bearer " + self.__token}
-        self.conifg_path = path
+        self.config_path = path
+        self.app_id = 'ch.fhnw.imvs.sonos_api_wrapper'
 
     def discover (self):
         r = self._get_request_to_sonos('/households')
@@ -66,6 +68,15 @@ class MySonos:
         else:
             return r
 
+    def _delete_request_to_sonos (self, url):
+        r = requests.delete(self.base_url + url,
+                            headers=self.base_header)
+        if r.status_code == 401:
+            self.refresh_token()
+            return self._get_request_to_sonos(url)
+        else:
+            return r
+
     @classmethod
     def from_config (cls, path):
         with open(path) as conf:
@@ -89,6 +100,10 @@ class Households:
                 return group
         return None
 
+    def pause_all_groups (self):
+        for group in self.groups:
+            group.pause()
+
     def find_favourite_by_name (self, name):
         for favourite in self.favourites:
             if favourite.name == name:
@@ -111,7 +126,7 @@ class Households:
 
     def get_playlist (self):
         self.favourites.clear()
-        r = self.mySonos._get_request_to_sonos( '/households/' + self.id + '/playlists').json()
+        r = self.mySonos._get_request_to_sonos('/households/' + self.id + '/playlists').json()
         for playlist in r['playlists']:
             self.playlists.append(
                     Playlist(playlist['id'], playlist['name'], playlist['type'], playlist['trackCount'], self.mySonos,
@@ -120,16 +135,28 @@ class Households:
     def get_groups_and_players (self):
         self.groups.clear()
         self.players.clear()
-        r = self.mySonos._get_request_to_sonos( '/households/' + self.id + '/groups')
+        r = self.mySonos._get_request_to_sonos('/households/' + self.id + '/groups')
         res = r.json()
         for player in res['players']:
-            self.players.append(Player(player['id'], player['name'], self.mySonos))
+            print(player)
+            self.players.append(Player(player['id'], player['name'],  player['apiVersion'],  player['deviceIds'],
+                                       player['icon'],  player['softwareVersion'],  player['webSocketUrl'],
+                                       player['capabilities'], self.mySonos))
         for group in res['groups']:
+            print(group)
             self.groups.append(
                     Group(group['id'], group['name'], group['coordinatorId'], group['playbackState'],
                           group['playerIds'],
                           self.mySonos))
         return self
+
+
+    def find_player_by_id(self, id):
+        for player in self.players:
+            if player.name == id:
+                return player
+        return None
+
 
 
 class Group:
@@ -145,61 +172,61 @@ class Group:
 
     def get_volume (self):
         res = self.mySonos._get_request_to_sonos(
-                 '/groups/' + self.id + '/groupVolume').json()
+                '/groups/' + self.id + '/groupVolume').json()
         self.volume.volume = res['volume']
         self.volume.muted = res['muted']
         self.volume.fixed = res['fixed']
 
     def load_favourite (self, favourite_id):
-        self.mySonos._post_request_to_sonos( '/groups/' + self.id + '/favorites',
+        self.mySonos._post_request_to_sonos('/groups/' + self.id + '/favorites',
                                             {"favoriteId": favourite_id, "playOnCompletion": True})
 
     def load_playlist (self, playlist_id):
-        self.mySonos._post_request_to_sonos( '/groups/' + self.id + '/playlists',
+        self.mySonos._post_request_to_sonos('/groups/' + self.id + '/playlists',
                                             {"playlistId": playlist_id, "playOnCompletion": True})
 
     def set_muted (self, mute):
-        self.mySonos._post_request_to_sonos( '/groups/' + self.id + '/groupVolume/mute',
+        self.mySonos._post_request_to_sonos('/groups/' + self.id + '/groupVolume/mute',
                                             {"muted": mute})
 
     def set_relativ_volume (self, relativ_volume):
-        self.mySonos._post_request_to_sonos( '/groups/' + self.id + '/groupVolume/relative',
+        self.mySonos._post_request_to_sonos('/groups/' + self.id + '/groupVolume/relative',
                                             {"volumeDelta": relativ_volume})
 
     def set_volume (self, volume):
-        self.mySonos._post_request_to_sonos( '/groups/' + self.id + '/groupVolume',
+        self.mySonos._post_request_to_sonos('/groups/' + self.id + '/groupVolume',
                                             {"volume": volume})
 
     def toggle_play (self):
         self.mySonos._post_request_to_sonos_without_body(
-                 '/groups/' + self.id + '/playback/togglePlayPause')
+                '/groups/' + self.id + '/playback/togglePlayPause')
 
     def pause (self):
         self.mySonos._post_request_to_sonos_without_body(
-             '/groups/' + self.id + '/playback/pause')
+                '/groups/' + self.id + '/playback/pause')
 
     def play (self):
         self.mySonos._post_request_to_sonos_without_body(
-             '/groups/' + self.id + '/playback/play')
+                '/groups/' + self.id + '/playback/play')
 
     def skip_to_next_track (self):
         self.mySonos._post_request_to_sonos_without_body(
-                 '/groups/' + self.id + '/playback/skipToNextTrack')
+                '/groups/' + self.id + '/playback/skipToNextTrack')
 
     def skip_to_previous_track (self):
         self.mySonos._post_request_to_sonos_without_body(
-                 '/groups/' + self.id + '/playback/skipToPreviousTrack')
+                '/groups/' + self.id + '/playback/skipToPreviousTrack')
 
     def seek (self, mills):
-        self.mySonos._post_request_to_sonos( '/groups/' + self.id + '/playback/seek',
+        self.mySonos._post_request_to_sonos('/groups/' + self.id + '/playback/seek',
                                             {'positionMillis': mills})
 
     def seek_relative (self, mills):
-        self.mySonos._post_request_to_sonos( '/groups/' + self.id + '/playback/seekRelative',
+        self.mySonos._post_request_to_sonos('/groups/' + self.id + '/playback/seekRelative',
                                             {'deltaMillis': mills})
 
     def set_playback_state (self):
-        r = self.mySonos._post_request_to_sonos_without_body( '/groups/' + self.id + '/playback')
+        r = self.mySonos._post_request_to_sonos_without_body('/groups/' + self.id + '/playback')
         self.playbackState = r.json()['playbackState']
 
     def to_string (self):
@@ -217,29 +244,41 @@ class Favourite:
 
 class Player:
 
-    def __init__ (self, id, name, mySonos):
+    def __init__ (self, id, name, api_version, device_ids, icon, software_version, websocket_url, capabilities, mySonos):
         self.id = id
         self.name = name
+        self.api_verion = api_version
+        self.device_ids = device_ids
+        self.icon = icon
+        self.software_version = software_version
+        self.websocket_url = websocket_url
+        self.capabilities = capabilities
         self.volume = {"volume": None, "muted": None, "fixed": None}
         self.mySonos = mySonos
 
-    def get_volume(self):
+    def get_volume (self):
         res = self.mySonos._get_request_to_sonos('/players/' + self.id + '/playerVolume')
         self.volume.volume = res['volume']
         self.volume.muted = res['muted']
         self.volume.fixed = res['fixed']
 
-    def set_muted(self, muted):
+    def set_muted (self, muted):
         self.mySonos._post_request_to_sonos('/players/' + self.id + '/playerVolume/mute', {"muted": muted})
 
     def set_relativ_volume (self, relativ_volume):
-        self.mySonos._post_request_to_sonos( '/players/' + self.id + '/playerVolume/relative',
+        self.mySonos._post_request_to_sonos('/players/' + self.id + '/playerVolume/relative',
                                             {"volumeDelta": relativ_volume})
-
     def set_volume (self, volume):
-        self.mySonos._post_request_to_sonos( '/players/' + self.id + '/playerVolume',
+        self.mySonos._post_request_to_sonos('/players/' + self.id + '/playerVolume',
                                             {"volume": volume})
 
+
+    def play_audioclip (self, stream_url, cliptype='CHIME', error_code=None,
+                        priority='Low', name="default", volume=-1):
+        if 'AUDIO_CLIP' in self.capabilities:
+            audioclip = Audioclip(cliptype, error_code, None, name, priority, None, self.id, stream_url,
+                                  self.mySonos)
+            audioclip.load_audioclip(volume)
 
 class Playlist:
 
@@ -254,6 +293,46 @@ class Playlist:
 
     def load_tracks (self):
         res = self.mySonos._post_request_to_sonos(
-             '/households/' + self.houshold_id + '/playlists/getPlaylist',
-            {'playlistId': self.id}).json()
+                '/households/' + self.houshold_id + '/playlists/getPlaylist',
+                {'playlistId': self.id}).json()
         self.tracks = res['tracks']
+
+
+class Audioclip:
+
+    def __init__ (self, clip_type, error_code, id, name, priority, status, player_id, stream_url, mySonos):
+        self.app_id = mySonos.app_id
+        self.clip_type = clip_type
+        self.error_code = error_code
+        self.id = id
+        self.name = name
+        self.priority = priority
+        self.status = status
+        self.player_id = player_id
+        self.stream_url = stream_url
+        self.mySonos = mySonos
+
+    def load_audioclip (self, volume=-1):
+        body = {"appId": self.app_id, "name": self.name, "clipType": self.clip_type}
+        if volume != -1:
+            body['volume'] = volume
+        if self.stream_url != None:
+            body['streamUrl'] = self.stream_url
+        self.mySonos._post_request_to_sonos('/players/' + self.player_id + '/audioClip', body)
+
+    '''    
+    Not implemented yet on sonos
+    def cancel_audioclip(self):
+                self.mySonos._delete_request_to_sonos('/players/' + self.player_id + '/audioClip/' + self.id)
+        
+    '''
+
+
+class Session:
+
+
+    def __init__(self, session_state, session_id, session_created, custom_data):
+        self.session_state = session_state
+        self.session_id = session_id
+        self.session_created = session_created
+        self.custom_data = custom_data
