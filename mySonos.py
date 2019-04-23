@@ -1,6 +1,6 @@
 import json
-from enum import Enum
-
+import firebase_admin
+from firebase_admin import credentials, db
 import requests
 
 
@@ -15,6 +15,7 @@ class MySonos:
         self.base_header = {"Authorization": "Bearer " + self.__token}
         self.config_path = path
         self.app_id = 'ch.fhnw.imvs.sonos_api_wrapper'
+        self.callback = None
 
     def discover (self):
         r = self._get_request_to_sonos('/households')
@@ -22,6 +23,14 @@ class MySonos:
         self.households.clear()
         for household in res['households']:
             self.households.append(Households(household['id'], self))
+
+
+    def add_callback(self, houshold_id):
+        callback = Firebase_callback('/', self.__callback_function)
+
+    def __callback_function(self, path, data):
+        # pattern match path to update corresponding data
+        print(path)
 
     def refresh_token (self):
         header = {
@@ -36,6 +45,7 @@ class MySonos:
         print(res)
         self.__token = res['access_token']
         self.__refresh_token = res['refresh_token']
+        self.base_header = {"Authorization": "Bearer " + self.__token}
 
     def _save_new_config (self, config):
         with open('config.json', 'w') as outfile:
@@ -139,8 +149,8 @@ class Households:
         res = r.json()
         for player in res['players']:
             print(player)
-            self.players.append(Player(player['id'], player['name'],  player['apiVersion'],  player['deviceIds'],
-                                       player['icon'],  player['softwareVersion'],  player['webSocketUrl'],
+            self.players.append(Player(player['id'], player['name'], player['apiVersion'], player['deviceIds']
+                                       , player['softwareVersion'],
                                        player['capabilities'], self.mySonos))
         for group in res['groups']:
             print(group)
@@ -150,13 +160,15 @@ class Households:
                           self.mySonos))
         return self
 
+    def subscribe_to_groups (self):
+        r = self.mySonos._post_request_to_sonos_without_body('/households/' + self.id + '/groups/subscription')
+        print(r.status_code)
 
-    def find_player_by_id(self, id):
+    def find_player_by_id (self, id):
         for player in self.players:
             if player.name == id:
                 return player
         return None
-
 
 
 class Group:
@@ -244,12 +256,12 @@ class Favourite:
 
 class Player:
 
-    def __init__ (self, id, name, api_version, device_ids, icon, software_version, websocket_url, capabilities, mySonos):
+    def __init__ (self, id, name, api_version, device_ids, software_version, capabilities, mySonos, websocket_url=None):
         self.id = id
         self.name = name
         self.api_verion = api_version
         self.device_ids = device_ids
-        self.icon = icon
+        # self.icon = icon
         self.software_version = software_version
         self.websocket_url = websocket_url
         self.capabilities = capabilities
@@ -268,10 +280,10 @@ class Player:
     def set_relativ_volume (self, relativ_volume):
         self.mySonos._post_request_to_sonos('/players/' + self.id + '/playerVolume/relative',
                                             {"volumeDelta": relativ_volume})
+
     def set_volume (self, volume):
         self.mySonos._post_request_to_sonos('/players/' + self.id + '/playerVolume',
                                             {"volume": volume})
-
 
     def play_audioclip (self, stream_url, cliptype='CHIME', error_code=None,
                         priority='Low', name="default", volume=-1):
@@ -279,6 +291,7 @@ class Player:
             audioclip = Audioclip(cliptype, error_code, None, name, priority, None, self.id, stream_url,
                                   self.mySonos)
             audioclip.load_audioclip(volume)
+
 
 class Playlist:
 
@@ -330,9 +343,28 @@ class Audioclip:
 
 class Session:
 
-
-    def __init__(self, session_state, session_id, session_created, custom_data):
+    def __init__ (self, session_state, session_id, session_created, custom_data):
         self.session_state = session_state
         self.session_id = session_id
         self.session_created = session_created
         self.custom_data = custom_data
+
+
+class Firebase_callback:
+
+    def __init__ (self, path, function):
+        self.app = firebase_admin.initialize_app(
+            credentials.Certificate("mysonoshuealarm-firebase-adminsdk-xrp0o-b0eabfa86c.json"), {
+                    "databaseURL": "https://mysonoshuealarm.firebaseio.com"
+                })
+        self.path = path.replace('.','').replace('#', '').replace(',', '').replace('[', '').replace('$', '')
+        self.__set_up_listener()
+        self.function = function
+
+
+    def __set_up_listener(self):
+        db.reference(self.path).listen(self.sonos_listener)
+
+
+    def sonos_listener (self, event):
+        self.function(event.path, event.data)
