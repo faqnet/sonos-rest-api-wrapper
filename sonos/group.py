@@ -33,13 +33,13 @@ class Group:
         elif namespace == "playbackMetadata":
             self.metadata_status = data
 
-    def load_favourite (self, favourite_id):
+    def load_favourite (self, favourite_id, shuffle=True, repeat=True, crossfade=False):
         self.mySonos._post_request_to_sonos('/groups/' + self.id + '/favorites',
-                                            {"favoriteId": favourite_id, "playOnCompletion": True})
+                                            {"favoriteId": favourite_id, "playOnCompletion": True, "playModes" : {"shuffle" : shuffle, "repeat": repeat, "crossfade":crossfade}})
 
-    def load_playlist (self, playlist_id):
+    def load_playlist (self, playlist_id, shuffle=True, repeat=True, crossfade=False):
         self.mySonos._post_request_to_sonos('/groups/' + self.id + '/playlists',
-                                            {"playlistId": playlist_id, "playOnCompletion": True, "playModes" : {"shuffle" : True, "repeat": True}})
+                                            {"playlistId": playlist_id, "playOnCompletion": True, "playModes" : {"shuffle" : shuffle, "repeat": repeat, "crossfade":crossfade}})
 
     def set_muted (self, mute):
         self.mySonos._post_request_to_sonos('/groups/' + self.id + '/groupVolume/mute',
