@@ -153,3 +153,9 @@ class Household:
                 return player
         return None
 
+
+    def find_player_by_name (self, name):
+        for player in self.players:
+            if player.name == name:
+                return player
+        return None

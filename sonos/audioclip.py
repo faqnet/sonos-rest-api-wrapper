@@ -15,7 +15,7 @@ class Audioclip:
     def load_audioclip (self, volume=-1):
         body = {"appId": self.app_id, "name": self.name, "clipType": self.clip_type}
         if volume != -1:
-            body['volume'] = volume
+            body['volume'] = 30
         if self.stream_url != None:
             body['streamUrl'] = self.stream_url
         self.mySonos._post_request_to_sonos('/players/' + self.player_id + '/audioClip', body)
