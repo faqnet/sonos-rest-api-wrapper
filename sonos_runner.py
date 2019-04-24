@@ -1,5 +1,4 @@
-from mySonos import MySonos, Group, Player, Households
-
+from sonos import MySonos
 if __name__ == '__main__':
     sonos = MySonos.from_config('config.json')
 

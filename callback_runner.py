@@ -1,6 +1,6 @@
 import time
 
-from mySonos import Firebase_callback
+from sonos import mySonos
 
 
 class test:
@@ -13,7 +13,7 @@ class test:
 
 if __name__ == '__main__':
     b = test()
-    d = Firebase_callback('/', b.passable)
+    d = mySonos.Firebase_callback('/', b.passable)
     print(b.a)
     time.sleep(5)
     print("done sleeping ")
