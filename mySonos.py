@@ -33,7 +33,7 @@ class MySonos:
 
 
     def add_callback(self):
-        callback = Firebase_callback('/', self)
+        callback = Firebase_callback('/', self._callback_function)
         self.callback = callback
 
     def subscribe(self):
@@ -480,14 +480,14 @@ class Session:
 
 class Firebase_callback:
 
-    def __init__ (self, path, mySonos):
+    def __init__ (self, path, function):
         self.listener = None
         self.app = firebase_admin.initialize_app(
             credentials.Certificate("mysonoshuealarm-firebase-adminsdk-xrp0o-b0eabfa86c.json"), {
                     "databaseURL": "https://mysonoshuealarm.firebaseio.com"
                 })
         self.path = path.replace('.','').replace('#', '').replace(',', '').replace('[', '').replace('$', '')
-        self.mySonos = mySonos
+        self.function= function
         self.__set_up_listener()
 
 
@@ -496,7 +496,7 @@ class Firebase_callback:
 
 
     def __sonos_listener (self, event):
-        self.mySonos._callback_function(event.path, event.data)
+        self.function(event.path, event.data)
 
 
     def close(self):
