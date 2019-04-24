@@ -1,4 +1,6 @@
 import json
+import threading
+
 import firebase_admin
 from firebase_admin import credentials, db
 import requests
@@ -16,6 +18,11 @@ class MySonos:
         self.config_path = path
         self.app_id = 'ch.fhnw.imvs.sonos_api_wrapper'
         self.callback = None
+        self.namespaces_houshold = {"groups", "favorites", "playlists"}
+        self.namespaces_group = {"groupVolume", "playback"}
+        self.namespaces_player = {"playerVolume", "audioClip"}
+
+
 
     def discover (self):
         r = self._get_request_to_sonos('/households')
@@ -25,12 +32,27 @@ class MySonos:
             self.households.append(Households(household['id'], self))
 
 
-    def add_callback(self, houshold_id):
-        callback = Firebase_callback('/', self.__callback_function)
+    def add_callback(self):
+        callback = Firebase_callback('/', self)
+        self.callback = callback
 
-    def __callback_function(self, path, data):
-        # pattern match path to update corresponding data
-        print(path)
+    def subscribe(self):
+        for household in self.households:
+            household.subscribe()
+
+    def has_callback(self):
+        return self.callback is not None
+
+    def _callback_function(self, path, data):
+        path = str(path)
+        paths = path.split('/')
+        paths.pop(0)
+        houshold_id = paths.pop(0)
+        if paths != []:
+            for household in self.households:
+                ids = household.id.replace('.','').replace('#', '').replace(',', '').replace('[', '').replace('$', '')
+                if ids == houshold_id:
+                    household.callback(paths, data['data'])
 
     def refresh_token (self):
         header = {
@@ -97,22 +119,44 @@ class MySonos:
 class Households:
 
     def __init__ (self, id, mySonos):
+        self.group_and_player_lock = threading.RLock()
         self.id = id
         self.groups = []
         self.players = []
         self.favourites = []
+        self.favourites_id = None
         self.playlists = []
+        self.playlists_id = None
         self.mySonos = mySonos
 
+
     def find_group_by_name (self, name):
-        for group in self.groups:
-            if group.name == name:
-                return group
-        return None
+        self.group_and_player_lock.acquire()
+        try:
+            for group in self.groups:
+                if group.name == name:
+                    return group
+            return None
+        finally:
+            self.group_and_player_lock.release()
+
+    def find_group_by_id (self, id):
+        self.group_and_player_lock.acquire()
+        try:
+            for group in self.groups:
+                if group.id == id:
+                    return group
+            return None
+        finally:
+            self.group_and_player_lock.release()
 
     def pause_all_groups (self):
-        for group in self.groups:
-            group.pause()
+        self.group_and_player_lock.acquire()
+        try:
+            for group in self.groups:
+                group.pause()
+        finally:
+            self.group_and_player_lock.release()
 
     def find_favourite_by_name (self, name):
         for favourite in self.favourites:
@@ -130,6 +174,7 @@ class Households:
     def get_favourite (self):
         self.favourites.clear()
         r = self.mySonos._get_request_to_sonos('/households/' + self.id + '/favorites').json()
+        self.favourites_id = r['version']
         for favourites in r['items']:
             self.favourites.append(
                     Favourite(favourites['id'], favourites['name'], favourites['description'], favourites['imageUrl']))
@@ -137,36 +182,90 @@ class Households:
     def get_playlist (self):
         self.favourites.clear()
         r = self.mySonos._get_request_to_sonos('/households/' + self.id + '/playlists').json()
+        self.playlists_id = r['version']
         for playlist in r['playlists']:
             self.playlists.append(
                     Playlist(playlist['id'], playlist['name'], playlist['type'], playlist['trackCount'], self.mySonos,
                              self.id))
 
     def get_groups_and_players (self):
-        self.groups.clear()
-        self.players.clear()
+
         r = self.mySonos._get_request_to_sonos('/households/' + self.id + '/groups')
         res = r.json()
-        for player in res['players']:
-            print(player)
-            self.players.append(Player(player['id'], player['name'], player['apiVersion'], player['deviceIds']
-                                       , player['softwareVersion'],
-                                       player['capabilities'], self.mySonos))
-        for group in res['groups']:
-            print(group)
-            self.groups.append(
-                    Group(group['id'], group['name'], group['coordinatorId'], group['playbackState'],
-                          group['playerIds'],
-                          self.mySonos))
+
+        self.update_groups_and_players(res)
         return self
 
-    def subscribe_to_groups (self):
-        r = self.mySonos._post_request_to_sonos_without_body('/households/' + self.id + '/groups/subscription')
-        print(r.status_code)
+    def update_groups_and_players(self, data):
+        self.group_and_player_lock.acquire()
+        try:
+            self.groups.clear()
+            self.players.clear()
+            for player in data['players']:
+                self.players.append(Player(player['id'], player['name'], player['apiVersion'], player['deviceIds']
+                                           , player['softwareVersion'],
+                                           player['capabilities'], self.mySonos))
+            for group in data['groups']:
+                self.groups.append(
+                        Group(group['id'], group['name'], group['coordinatorId'], group['playbackState'],
+                              group['playerIds'],
+                              self.mySonos))
+        finally:
+            self.group_and_player_lock.release()
+
+
+    def subscribe(self):
+        self._subscribe()
+        for player in self.players:
+            player._subscribe()
+        for group in self.groups:
+            group._subscribe()
+
+    def _subscribe(self):
+        for namespace in self.mySonos.namespaces_houshold:
+            self.mySonos._post_request_to_sonos_without_body('/households/' + self.id + '/'+ namespace +'/subscription')
+
+    def unsubscribe(self):
+        self._unsubscribe()
+        for player in self.players:
+            player._unsubscribe()
+        for group in self.groups:
+            group._unsubscribe()
+
+    def _unsubscribe (self):
+        for namespace in self.mySonos.namespaces_houshold:
+            self.mySonos._delete_request_to_sonos('/households/' + self.id + '/'+ namespace +'/subscription')
+
+    def callback(self, path, data):
+        namespace = path.pop(0)
+        print(namespace)
+        if (namespace in self.mySonos.namespaces_houshold):
+           self.handle_callback(namespace, data)
+        elif (namespace in self.mySonos.namespaces_group):
+            print("handelt by group")
+            group = self.find_player_by_id(path.pop(0))
+            if group is not None:
+                group.handle_callback(data, namespace)
+        elif (namespace in self.mySonos.namespaces_player):
+            print("handelt by player")
+            player = self.find_player_by_id(path.pop(0))
+            if player is not None:
+                player.handle_callback(data, namespace)
+
+
+    def handle_callback(self, namespace, data):
+        print("handelt by houshold")
+        print(data)
+        if namespace == "playlists" and self.playlists_id != data['version']:
+            self.get_playlist()
+        elif namespace == "favorites" and self.favourites_id != data['version']:
+            self.get_favourite()
+        elif namespace == "groups":
+            self.update_groups_and_players(data)
 
     def find_player_by_id (self, id):
         for player in self.players:
-            if player.name == id:
+            if player.id == id:
                 return player
         return None
 
@@ -185,9 +284,22 @@ class Group:
     def get_volume (self):
         res = self.mySonos._get_request_to_sonos(
                 '/groups/' + self.id + '/groupVolume').json()
-        self.volume.volume = res['volume']
-        self.volume.muted = res['muted']
-        self.volume.fixed = res['fixed']
+        self.volume = res
+
+
+    def _subscribe (self):
+        for namespace in self.mySonos.namespaces_group:
+            self.mySonos._post_request_to_sonos_without_body('/players/' + self.id + '/'+ namespace +'/subscription')
+
+    def _unsubscribe (self):
+        for namespace in self.mySonos.namespaces_group:
+            self.mySonos._delete_request_to_sonos('/players/' + self.id + '/' + namespace + '/subscription')
+
+    def handle_callback(self, data, namespace):
+        if (namespace == "groupVolume"):
+            self.volume = data
+        elif namespace == "playback":
+            print("playback")
 
     def load_favourite (self, favourite_id):
         self.mySonos._post_request_to_sonos('/groups/' + self.id + '/favorites',
@@ -270,9 +382,24 @@ class Player:
 
     def get_volume (self):
         res = self.mySonos._get_request_to_sonos('/players/' + self.id + '/playerVolume')
-        self.volume.volume = res['volume']
-        self.volume.muted = res['muted']
-        self.volume.fixed = res['fixed']
+        self.volume = res
+
+
+    def _subscribe (self):
+        for namespace in self.mySonos.namespaces_player:
+            self.mySonos._post_request_to_sonos_without_body('/players/' + self.id + '/'+ namespace +'/subscription')
+
+
+    def _unsubscribe (self):
+        for namespace in self.mySonos.namespaces_player:
+            self.mySonos._delete_request_to_sonos('/players/' + self.id + '/'+ namespace +'/subscription')
+
+    def handle_callback(self, data, namespace):
+        if namespace == "audioClip":
+            print("dont care")
+        elif namespace == "playerVolume":
+            self.volume = data
+
 
     def set_muted (self, muted):
         self.mySonos._post_request_to_sonos('/players/' + self.id + '/playerVolume/mute', {"muted": muted})
@@ -325,6 +452,7 @@ class Audioclip:
         self.stream_url = stream_url
         self.mySonos = mySonos
 
+
     def load_audioclip (self, volume=-1):
         body = {"appId": self.app_id, "name": self.name, "clipType": self.clip_type}
         if volume != -1:
@@ -352,19 +480,25 @@ class Session:
 
 class Firebase_callback:
 
-    def __init__ (self, path, function):
+    def __init__ (self, path, mySonos):
+        self.listener = None
         self.app = firebase_admin.initialize_app(
             credentials.Certificate("mysonoshuealarm-firebase-adminsdk-xrp0o-b0eabfa86c.json"), {
                     "databaseURL": "https://mysonoshuealarm.firebaseio.com"
                 })
         self.path = path.replace('.','').replace('#', '').replace(',', '').replace('[', '').replace('$', '')
+        self.mySonos = mySonos
         self.__set_up_listener()
-        self.function = function
 
 
     def __set_up_listener(self):
-        db.reference(self.path).listen(self.sonos_listener)
+        self.listener = db.reference(self.path).listen(self.__sonos_listener)
 
 
-    def sonos_listener (self, event):
-        self.function(event.path, event.data)
+    def __sonos_listener (self, event):
+        self.mySonos._callback_function(event.path, event.data)
+
+
+    def close(self):
+        self.listener.close()
+        firebase_admin.delete_app(self.app)

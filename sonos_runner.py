@@ -5,7 +5,8 @@ if __name__ == '__main__':
 
     sonos.discover()
     household = sonos.households[0].get_groups_and_players()
-    household.subscribe_to_groups()
+    sonos.add_callback()
+    sonos.subscribe()
     livingroom = household.find_group_by_name("Living room")
     livingroom.set_volume(10)
 
