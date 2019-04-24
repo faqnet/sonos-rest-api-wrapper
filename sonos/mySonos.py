@@ -17,7 +17,7 @@ class MySonos:
         self.app_id = 'ch.fhnw.imvs.sonos_api_wrapper'
         self.callback = None
         self.namespaces_houshold = {"groups", "favorites", "playlists"}
-        self.namespaces_group = {"groupVolume", "playback"}
+        self.namespaces_group = {"groupVolume", "playback", "playbackMetadata"}
         self.namespaces_player = {"playerVolume", "audioClip"}
 
     def discover (self):

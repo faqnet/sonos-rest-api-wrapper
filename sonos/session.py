@@ -7,3 +7,5 @@ class Session:
         self.session_created = session_created
         self.custom_data = custom_data
 
+    def create_session(self):
+        print("sdaf")

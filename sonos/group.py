@@ -8,7 +8,8 @@ class Group:
         self.playbackState = playbackState
         self.playerIDs = playerIDS
         self.mySonos = mySonos
-        self.volume = {"volume": None, "muted": None, "fixed": None}
+        self.volume = None
+        self.metadata_status = None
 
     def get_volume (self):
         res = self.mySonos._get_request_to_sonos(
@@ -18,7 +19,7 @@ class Group:
 
     def _subscribe (self):
         for namespace in self.mySonos.namespaces_group:
-            self.mySonos._post_request_to_sonos_without_body('/groups/' + self.id + '/'+ namespace +'/subscription')
+            self.mySonos._post_request_to_sonos_without_body('/groups/' + self.id + '/' + namespace + '/subscription')
 
     def _unsubscribe (self):
         for namespace in self.mySonos.namespaces_group:
@@ -29,6 +30,8 @@ class Group:
             self.volume = data
         elif namespace == "playback":
             self.playbackState = data
+        elif namespace == "playbackMetadata":
+            self.metadata_status = data
 
     def load_favourite (self, favourite_id):
         self.mySonos._post_request_to_sonos('/groups/' + self.id + '/favorites',
@@ -36,7 +39,7 @@ class Group:
 
     def load_playlist (self, playlist_id):
         self.mySonos._post_request_to_sonos('/groups/' + self.id + '/playlists',
-                                            {"playlistId": playlist_id, "playOnCompletion": True})
+                                            {"playlistId": playlist_id, "playOnCompletion": True, "playModes" : {"shuffle" : True, "repeat": True}})
 
     def set_muted (self, mute):
         self.mySonos._post_request_to_sonos('/groups/' + self.id + '/groupVolume/mute',
@@ -82,5 +85,6 @@ class Group:
         r = self.mySonos._post_request_to_sonos_without_body('/groups/' + self.id + '/playback').json()
         self.playbackState = r
 
-    def to_string (self):
-        return self.id + " " + self.name + " " + self.coordinatorId + " " + self.playbackState
+    def get_metadata_status(self):
+        r = self.mySonos._get_request_to_sonos('/groups/' + self.id + '/playbackMetadata').json()
+        self.metadata_status = r
