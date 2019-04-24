@@ -20,7 +20,7 @@ class MySonos:
         self.namespaces_group = {"groupVolume", "playback", "playbackMetadata"}
         self.namespaces_player = {"playerVolume", "audioClip"}
 
-    def discover (self):
+    def discover(self):
         r = self._get_request_to_sonos('/households')
         res = r.json()
         self.households.clear()

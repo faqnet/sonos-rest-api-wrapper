@@ -47,7 +47,7 @@ class Player:
         self.mySonos._post_request_to_sonos('/players/' + self.id + '/playerVolume',
                                             {"volume": volume})
 
-    def play_audioclip (self, stream_url, cliptype='CHIME', error_code=None,
+    def load_audioclip (self, stream_url=None, cliptype='CHIME', error_code=None,
                         priority='Low', name="default", volume=-1):
         if 'AUDIO_CLIP' in self.capabilities:
             audioclip = Audioclip(cliptype, error_code, None, name, priority, None, self.id, stream_url,
