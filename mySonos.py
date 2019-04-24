@@ -1,6 +1,5 @@
 import json
 import threading
-
 import firebase_admin
 from firebase_admin import credentials, db
 import requests
@@ -22,8 +21,6 @@ class MySonos:
         self.namespaces_group = {"groupVolume", "playback"}
         self.namespaces_player = {"playerVolume", "audioClip"}
 
-
-
     def discover (self):
         r = self._get_request_to_sonos('/households')
         res = r.json()
@@ -36,9 +33,18 @@ class MySonos:
         callback = Firebase_callback('/', self._callback_function)
         self.callback = callback
 
+    def remove_callback(self):
+        if self.callback is not None:
+            self.callback.close()
+
     def subscribe(self):
         for household in self.households:
             household.subscribe()
+
+    def unsubscribe(self):
+        for household in self.households:
+            household.unsubscribe()
+
 
     def has_callback(self):
         return self.callback is not None
@@ -243,7 +249,7 @@ class Households:
            self.handle_callback(namespace, data)
         elif (namespace in self.mySonos.namespaces_group):
             print("handelt by group")
-            group = self.find_player_by_id(path.pop(0))
+            group = self.find_group_by_id(path.pop(0))
             if group is not None:
                 group.handle_callback(data, namespace)
         elif (namespace in self.mySonos.namespaces_player):
@@ -289,17 +295,17 @@ class Group:
 
     def _subscribe (self):
         for namespace in self.mySonos.namespaces_group:
-            self.mySonos._post_request_to_sonos_without_body('/players/' + self.id + '/'+ namespace +'/subscription')
+            self.mySonos._post_request_to_sonos_without_body('/groups/' + self.id + '/'+ namespace +'/subscription')
 
     def _unsubscribe (self):
         for namespace in self.mySonos.namespaces_group:
-            self.mySonos._delete_request_to_sonos('/players/' + self.id + '/' + namespace + '/subscription')
+            self.mySonos._delete_request_to_sonos('/groups/' + self.id + '/' + namespace + '/subscription')
 
     def handle_callback(self, data, namespace):
         if (namespace == "groupVolume"):
             self.volume = data
         elif namespace == "playback":
-            print("playback")
+            self.playbackState = data
 
     def load_favourite (self, favourite_id):
         self.mySonos._post_request_to_sonos('/groups/' + self.id + '/favorites',
@@ -350,8 +356,8 @@ class Group:
                                             {'deltaMillis': mills})
 
     def set_playback_state (self):
-        r = self.mySonos._post_request_to_sonos_without_body('/groups/' + self.id + '/playback')
-        self.playbackState = r.json()['playbackState']
+        r = self.mySonos._post_request_to_sonos_without_body('/groups/' + self.id + '/playback').json()
+        self.playbackState = r
 
     def to_string (self):
         return self.id + " " + self.name + " " + self.coordinatorId + " " + self.playbackState
