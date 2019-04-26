@@ -15,7 +15,7 @@ class Player:
         self.volume = {"volume": None, "muted": None, "fixed": None}
         self.ht_options = None
         self.ht_power_state = None
-        self.player_setting = None
+        self.settings = None
         self.mySonos = mySonos
 
     def get_volume (self):
@@ -79,7 +79,7 @@ class Player:
                     '/players/' + self.id + '/homeTheater/tvPowerState', payload)
 
     def get_player_settings (self):
-        self.player_setting = self.mySonos._get_request_to_sonos('/players/' + self.id + '/settings/player')
+        self.settings = self.mySonos._get_request_to_sonos('/players/' + self.id + '/settings/player')
 
     def set_play_settings (self, volume_scaling_factor=1.0, volume_mode="VARIABLE", mono_mode=False,
                            wifi_disable=False):
@@ -89,4 +89,4 @@ class Player:
             "monoMode"           : mono_mode,
             "wifiDisable"        : wifi_disable
             }
-        self.player_setting = self.mySonos._get_request_to_sonos('/players/' + self.id + '/settings/player')
+        self.settings = self.mySonos._get_request_to_sonos('/players/' + self.id + '/settings/player')

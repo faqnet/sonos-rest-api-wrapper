@@ -31,20 +31,34 @@ class Group:
         elif namespace == "playbackMetadata":
             self.metadata_status = data
 
-    def load_favourite (self, favourite_id, shuffle=True, repeat=True, crossfade=False):
+    def load_line_in (self, device_id=None, play_on_completion=True):
+        payload = {"playOnCompletion": play_on_completion}
+        if device_id != None:
+            payload['deviceId'] = device_id
+        self.mySonos._post_request_to_sonos('/groups/' + self.id + '/playback/lineIn', payload)
+
+    def load_favourite (self, favourite_id, shuffle=True, repeat=True, crossfade=False, play_on_completion=True):
         self.mySonos._post_request_to_sonos('/groups/' + self.id + '/favorites',
                                             {
-                                                "favoriteId": favourite_id, "playOnCompletion": True, "playModes": {
-                                                "shuffle": shuffle, "repeat": repeat, "crossfade": crossfade
-                                                }
+                                                "favoriteId"      : favourite_id,
+                                                "playOnCompletion": play_on_completion,
+                                                "playModes"       : {
+                                                    "shuffle"  : shuffle,
+                                                    "repeat"   : repeat,
+                                                    "crossfade": crossfade
+                                                    }
                                                 })
 
-    def load_playlist (self, playlist_id, shuffle=True, repeat=True, crossfade=False):
+    def load_playlist (self, playlist_id, shuffle=True, repeat=True, crossfade=False, play_on_completion=True):
         self.mySonos._post_request_to_sonos('/groups/' + self.id + '/playlists',
                                             {
-                                                "playlistId": playlist_id, "playOnCompletion": True, "playModes": {
-                                                "shuffle": shuffle, "repeat": repeat, "crossfade": crossfade
-                                                }
+                                                "playlistId"      : playlist_id,
+                                                "playOnCompletion": play_on_completion,
+                                                "playModes"       : {
+                                                    "shuffle"  : shuffle,
+                                                    "repeat"   : repeat,
+                                                    "crossfade": crossfade
+                                                    }
                                                 })
 
     def set_muted (self, mute):
