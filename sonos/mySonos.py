@@ -28,8 +28,8 @@ class MySonos:
             self.households.append(Household(household['id'], self))
 
 
-    def add_callback(self):
-        callback = Firebase_callback('/', self._callback_function)
+    def add_callback(self, callback):
+        callback.add_function(self._callback_function)
         self.callback = callback
 
     def remove_callback(self):
