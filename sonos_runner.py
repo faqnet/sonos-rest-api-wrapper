@@ -2,7 +2,7 @@ from sonos import MySonos
 from sonos.firebase_callback import Firebase_callback
 
 if __name__ == '__main__':
-    firebase = Firebase_callback('/')
+    firebase = Firebase_callback.from_config('firebase_config.json')
     sonos = MySonos.from_config('config.json')
     sonos.discover()
     household = sonos.households[0].get_groups_and_players()
