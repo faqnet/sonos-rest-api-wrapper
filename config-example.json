@@ -1,7 +1,24 @@
 {
-  "access_token": "xxxxxx-xxxxx-xxxxx-xxxxxx-xxxxxxxxx",
+  "access_token": "xxxxxxxx-xxxxx-xxxx-xxxx-xxxxxxxxx",
   "token_type": "Bearer",
   "expires_in": 86400,
-  "refresh_token": "xxxxxx-xxxxx-xxxxx-xxxxxx-xxxxxxxxx",
-  "scope": "playback-control-all"
+  "refresh_token": "xxxxxxxxxx-xxxx-xxxxx-xxxx-xxxxxxxxx",
+  "scope": "playback-control-all",
+  "bearerToken": "Basic xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "base_url": "https://api.ws.sonos.com/control/api/v1",
+  "app_id": "",
+  "namespaces_houshold": [
+    "groups",
+    "favorites",
+    "playlists"
+  ],
+  "namespaces_group": [
+    "groupVolume",
+    "playback",
+    "playbackMetadata"
+  ],
+  "namespaces_player": [
+    "playerVolume",
+    "audioClip"
+  ]
 }

@@ -1,24 +1,23 @@
 import json
 import requests
-from sonos.firebase_callback import Firebase_callback
 from sonos.houshold import Household
 
 
 class MySonos:
 
-    def __init__ (self, token, refreshToken, path):
+    def __init__ (self, token, refreshToken, path, bearer_token, base_url, app_id, namespaces_houshold, namespaces_group, namespaces_player):
         self.__token = token
         self.__refresh_token = refreshToken
         self.households = []
-        self.__bearerToken = "Basic YjM1MmVjODQtODVhYS00ODkyLWI5NDUtNTkzMzllNGE4YWZkOmQ1MDRmZjE1LTZhZmYtNDMxYy1hMTRjLTIwM2RhODJiOTE4Mw=="
-        self.base_url = "https://api.ws.sonos.com/control/api/v1"
+        self.__bearer_token = bearer_token
+        self.base_url = base_url
         self.base_header = {"Authorization": "Bearer " + self.__token}
         self.config_path = path
-        self.app_id = 'ch.fhnw.imvs.sonos_api_wrapper'
+        self.app_id = app_id
         self.callback = None
-        self.namespaces_houshold = {"groups", "favorites", "playlists"}
-        self.namespaces_group = {"groupVolume", "playback", "playbackMetadata"}
-        self.namespaces_player = {"playerVolume", "audioClip"}
+        self.namespaces_houshold = namespaces_houshold
+        self.namespaces_group = namespaces_group
+        self.namespaces_player = namespaces_player
 
     def discover(self):
         r = self._get_request_to_sonos('/households')
@@ -29,6 +28,10 @@ class MySonos:
 
 
     def add_callback(self, callback):
+        '''
+        :param callback: must call the sonos _callback_fucntion with 2 param path and data
+        :return:
+        '''
         callback.add_function(self._callback_function)
         self.callback = callback
 
@@ -62,19 +65,19 @@ class MySonos:
     def refresh_token (self):
         header = {
             "Content-Type" : "application/x-www-form-urlencoded;charset=utf-8",
-            "Authorization": self.__bearerToken
+            "Authorization": self.__bearer_token
             }
         payload = "grant_type=refresh_token&refresh_token=" + self.__refresh_token
         r = requests.post("https://api.sonos.com/login/v3/oauth/access", data=payload, headers=header)
         res = r.json()
-        self._save_new_config(res)
         self.__token = res['access_token']
         self.__refresh_token = res['refresh_token']
         self.base_header = {"Authorization": "Bearer " + self.__token}
+        self._save_new_config(self.to_dict())
 
-    def _save_new_config (self, config):
+    def _save_new_config (self, new_config):
         with open('config.json', 'w') as outfile:
-            json.dump(config, outfile)
+            json.dump(new_config, outfile)
 
     def _post_request_to_sonos_without_body (self, url):
         r = requests.post(self.base_url + url,
@@ -112,10 +115,29 @@ class MySonos:
         else:
             return r
 
+    def to_dict(self):
+        return {
+            "access_token": self.__token,
+            "refresh_token": self.__refresh_token,
+            "bearer_token": self.__bearer_token,
+            "base_url": self.base_url,
+            "app_id": self.app_id,
+            "namespaces_houshold": list(self.namespaces_houshold),
+            "namespaces_group": list(self.namespaces_group),
+            "namespaces_player": list(self.namespaces_player)
+            }
+
     @classmethod
     def from_config (cls, path):
         with open(path) as conf:
             config = json.load(conf)
-        return cls(config['access_token'], config['refresh_token'], path)
+        return cls(config['access_token'],
+                   config['refresh_token'],
+                   path, config['bearer_token'],
+                   config['base_url'],
+                   config['app_id'],
+                   set(config['namespaces_houshold']),
+                   set(config['namespaces_group']),
+                   set(config['namespaces_player']))
 
 
