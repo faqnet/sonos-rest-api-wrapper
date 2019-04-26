@@ -1,4 +1,3 @@
-
 class Group:
 
     def __init__ (self, id, name, coordinatorID, playbackState, playerIDS, mySonos):
@@ -16,7 +15,6 @@ class Group:
                 '/groups/' + self.id + '/groupVolume').json()
         self.volume = res
 
-
     def _subscribe (self):
         for namespace in self.mySonos.namespaces_group:
             self.mySonos._post_request_to_sonos_without_body('/groups/' + self.id + '/' + namespace + '/subscription')
@@ -25,7 +23,7 @@ class Group:
         for namespace in self.mySonos.namespaces_group:
             self.mySonos._delete_request_to_sonos('/groups/' + self.id + '/' + namespace + '/subscription')
 
-    def handle_callback(self, data, namespace):
+    def handle_callback (self, data, namespace):
         if (namespace == "groupVolume"):
             self.volume = data
         elif namespace == "playback":
@@ -35,11 +33,19 @@ class Group:
 
     def load_favourite (self, favourite_id, shuffle=True, repeat=True, crossfade=False):
         self.mySonos._post_request_to_sonos('/groups/' + self.id + '/favorites',
-                                            {"favoriteId": favourite_id, "playOnCompletion": True, "playModes" : {"shuffle" : shuffle, "repeat": repeat, "crossfade":crossfade}})
+                                            {
+                                                "favoriteId": favourite_id, "playOnCompletion": True, "playModes": {
+                                                "shuffle": shuffle, "repeat": repeat, "crossfade": crossfade
+                                                }
+                                                })
 
     def load_playlist (self, playlist_id, shuffle=True, repeat=True, crossfade=False):
         self.mySonos._post_request_to_sonos('/groups/' + self.id + '/playlists',
-                                            {"playlistId": playlist_id, "playOnCompletion": True, "playModes" : {"shuffle" : shuffle, "repeat": repeat, "crossfade":crossfade}})
+                                            {
+                                                "playlistId": playlist_id, "playOnCompletion": True, "playModes": {
+                                                "shuffle": shuffle, "repeat": repeat, "crossfade": crossfade
+                                                }
+                                                })
 
     def set_muted (self, mute):
         self.mySonos._post_request_to_sonos('/groups/' + self.id + '/groupVolume/mute',
@@ -85,6 +91,19 @@ class Group:
         r = self.mySonos._post_request_to_sonos_without_body('/groups/' + self.id + '/playback').json()
         self.playbackState = r
 
-    def get_metadata_status(self):
+    def get_metadata_status (self):
         r = self.mySonos._get_request_to_sonos('/groups/' + self.id + '/playbackMetadata').json()
         self.metadata_status = r
+
+    def modify_group (self, player_add=[], player_remove=[]):
+        payload = {
+            "playerIdsToAdd"   : player_add,
+            "playerIdsToRemove": player_remove
+            }
+        self.mySonos._post_request_to_sonos('/groups/' + self.id + '/groups/modifyGroupMembers', payload)
+
+    def replace_group_members (self, player_new):
+        payload = {
+            "playerIds": player_new
+            }
+        self.mySonos._post_request_to_sonos('/groups/' + self.id + '/groups/setGroupMembers', payload)

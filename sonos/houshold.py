@@ -18,27 +18,6 @@ class Household:
         self.playlists_id = None
         self.mySonos = mySonos
 
-
-    def find_group_by_name (self, name):
-        self.group_and_player_lock.acquire()
-        try:
-            for group in self.groups:
-                if group.name == name:
-                    return group
-            return None
-        finally:
-            self.group_and_player_lock.release()
-
-    def find_group_by_id (self, id):
-        self.group_and_player_lock.acquire()
-        try:
-            for group in self.groups:
-                if group.id == id:
-                    return group
-            return None
-        finally:
-            self.group_and_player_lock.release()
-
     def pause_all_groups (self):
         self.group_and_player_lock.acquire()
         try:
@@ -47,18 +26,12 @@ class Household:
         finally:
             self.group_and_player_lock.release()
 
-    def find_favourite_by_name (self, name):
-        for favourite in self.favourites:
-            if favourite.name == name:
-                return favourite
-        return None
-
-    def find_favourite_by_id (self, id):
-        for favourite in self.favourites:
-            if favourite.id == id:
-                return favourite
-
-        return None
+    def create_group (self, player_ids, group_providing=""):
+        payload = {
+            "playerIds"          : player_ids,
+            "musicContextGroupId": group_providing
+            }
+        self.mySonos._post_request_to_sonos("/households/" + self.id + "/groups/createGroup", payload)
 
     def get_favourite (self):
         self.favourites.clear()
@@ -81,11 +54,10 @@ class Household:
 
         r = self.mySonos._get_request_to_sonos('/households/' + self.id + '/groups')
         res = r.json()
-
         self.update_groups_and_players(res)
         return self
 
-    def update_groups_and_players(self, data):
+    def update_groups_and_players (self, data):
         self.group_and_player_lock.acquire()
         try:
             self.groups.clear()
@@ -102,19 +74,19 @@ class Household:
         finally:
             self.group_and_player_lock.release()
 
-
-    def subscribe(self):
+    def subscribe (self):
         self._subscribe()
         for player in self.players:
             player._subscribe()
         for group in self.groups:
             group._subscribe()
 
-    def _subscribe(self):
+    def _subscribe (self):
         for namespace in self.mySonos.namespaces_houshold:
-            self.mySonos._post_request_to_sonos_without_body('/households/' + self.id + '/'+ namespace +'/subscription')
+            self.mySonos._post_request_to_sonos_without_body(
+                    '/households/' + self.id + '/' + namespace + '/subscription')
 
-    def unsubscribe(self):
+    def unsubscribe (self):
         self._unsubscribe()
         for player in self.players:
             player._unsubscribe()
@@ -123,12 +95,12 @@ class Household:
 
     def _unsubscribe (self):
         for namespace in self.mySonos.namespaces_houshold:
-            self.mySonos._delete_request_to_sonos('/households/' + self.id + '/'+ namespace +'/subscription')
+            self.mySonos._delete_request_to_sonos('/households/' + self.id + '/' + namespace + '/subscription')
 
-    def callback(self, path, data):
+    def callback (self, path, data):
         namespace = path.pop(0)
         if (namespace in self.mySonos.namespaces_houshold):
-           self.handle_callback(namespace, data)
+            self.handle_callback(namespace, data)
         elif (namespace in self.mySonos.namespaces_group):
             group = self.find_group_by_id(path.pop(0))
             if group is not None:
@@ -138,8 +110,7 @@ class Household:
             if player is not None:
                 player.handle_callback(data, namespace)
 
-
-    def handle_callback(self, namespace, data):
+    def handle_callback (self, namespace, data):
         if namespace == "playlists" and self.playlists_id != data['version']:
             self.get_playlist()
         elif namespace == "favorites" and self.favourites_id != data['version']:
@@ -153,9 +124,41 @@ class Household:
                 return player
         return None
 
-
     def find_player_by_name (self, name):
         for player in self.players:
             if player.name == name:
                 return player
+        return None
+
+    def find_group_by_name (self, name):
+        self.group_and_player_lock.acquire()
+        try:
+            for group in self.groups:
+                if group.name == name:
+                    return group
+            return None
+        finally:
+            self.group_and_player_lock.release()
+
+    def find_group_by_id (self, id):
+        self.group_and_player_lock.acquire()
+        try:
+            for group in self.groups:
+                if group.id == id:
+                    return group
+            return None
+        finally:
+            self.group_and_player_lock.release()
+
+    def find_favourite_by_name (self, name):
+        for favourite in self.favourites:
+            if favourite.name == name:
+                return favourite
+        return None
+
+    def find_favourite_by_id (self, id):
+        for favourite in self.favourites:
+            if favourite.id == id:
+                return favourite
+
         return None

@@ -13,28 +13,28 @@ class Player:
         self.websocket_url = websocket_url
         self.capabilities = capabilities
         self.volume = {"volume": None, "muted": None, "fixed": None}
+        self.ht_options = None
+        self.ht_power_state = None
+        self.player_setting = None
         self.mySonos = mySonos
 
     def get_volume (self):
         res = self.mySonos._get_request_to_sonos('/players/' + self.id + '/playerVolume')
         self.volume = res
 
-
     def _subscribe (self):
         for namespace in self.mySonos.namespaces_player:
-            self.mySonos._post_request_to_sonos_without_body('/players/' + self.id + '/'+ namespace +'/subscription')
-
+            self.mySonos._post_request_to_sonos_without_body('/players/' + self.id + '/' + namespace + '/subscription')
 
     def _unsubscribe (self):
         for namespace in self.mySonos.namespaces_player:
-            self.mySonos._delete_request_to_sonos('/players/' + self.id + '/'+ namespace +'/subscription')
+            self.mySonos._delete_request_to_sonos('/players/' + self.id + '/' + namespace + '/subscription')
 
-    def handle_callback(self, data, namespace):
+    def handle_callback (self, data, namespace):
         if namespace == "audioClip":
             return
         elif namespace == "playerVolume":
             self.volume = data
-
 
     def set_muted (self, muted):
         self.mySonos._post_request_to_sonos('/players/' + self.id + '/playerVolume/mute', {"muted": muted})
@@ -49,9 +49,44 @@ class Player:
 
     def load_audioclip (self, stream_url=None, cliptype='CHIME', error_code=None,
                         priority='Low', name="default", volume=-1):
-        print('AUDIO_CLIP' in self.capabilities)
         if 'AUDIO_CLIP' in self.capabilities:
             audioclip = Audioclip(cliptype, error_code, None, name, priority, None, self.id, stream_url,
                                   self.mySonos)
             audioclip.load_audioclip(volume)
 
+    def get_ht_options (self):
+        if 'HT_PLAYBACK' in self.capabilities:
+            self.ht_options = self.mySonos._get_request_to_sonos('/players/' + self.id + '/homeTheater/options').json()
+
+    def load_ht_playback (self):
+        if 'HT_PLAYBACK' in self.capabilities:
+            self.mySonos._post_request_to_sonos_without_body('/players/' + self.id + '/homeTheater')
+
+    def set_ht_options (self, night_mode=False, enhnace_dialog=True):
+        if 'HT_PLAYBACK' in self.capabilities:
+            payload = {
+                "nightMode"    : night_mode,
+                "enhanceDialog": enhnace_dialog
+                }
+            self.mySonos._post_request_to_sonos('/players/' + self.id + '/homeTheater/options')
+
+    def set_tv_power_state (self, tv_power_state):
+        if 'HT_POWER_STATE' in self.capabilities:
+            payload = {
+                "tvPowerState": tv_power_state
+                }
+            self.ht_power_state = self.mySonos._post_request_to_sonos(
+                    '/players/' + self.id + '/homeTheater/tvPowerState', payload)
+
+    def get_player_settings (self):
+        self.player_setting = self.mySonos._get_request_to_sonos('/players/' + self.id + '/settings/player')
+
+    def set_play_settings (self, volume_scaling_factor=1.0, volume_mode="VARIABLE", mono_mode=False,
+                           wifi_disable=False):
+        payload = {
+            "volumeMode"         : volume_mode,
+            "volumeScalingFactor": volume_scaling_factor,
+            "monoMode"           : mono_mode,
+            "wifiDisable"        : wifi_disable
+            }
+        self.player_setting = self.mySonos._get_request_to_sonos('/players/' + self.id + '/settings/player')
