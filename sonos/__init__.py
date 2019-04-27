@@ -1,1 +1,1 @@
-from .mySonos import MySonos
+from .my_sonos import My_sonos
