@@ -1,4 +1,5 @@
 import json
+from typing import List
 import requests
 from sonos.houshold import Household
 
@@ -9,7 +10,7 @@ class My_sonos:
                   namespaces_group, namespaces_player):
         self.__token = token
         self.__refresh_token = refreshToken
-        self.households = []
+        self.households: List[Household] = []
         self.__bearer_token = bearer_token
         self.base_url = base_url
         self.base_header = {"Authorization": "Bearer " + self.__token}
@@ -27,12 +28,16 @@ class My_sonos:
         for household in res['households']:
             self.households.append(Household(household['id'], self))
 
-    def add_callback (self, callback):
+    def get_household(self) -> Household:
+        return self.households[0]
+
+    def add_callback (self, callback, path: str):
         '''
+        :param path:
         :param callback: must call the sonos _callback_fucntion with 2 param path and data
         :return:
         '''
-        callback.add_function(self._callback_function)
+        callback.add_function(self._callback_function, path)
         self.callback = callback
 
     def remove_callback (self):
@@ -52,8 +57,7 @@ class My_sonos:
 
     def _callback_function (self, path, data):
         path = str(path)
-        paths = path.split('/')
-        paths.pop(0)
+        paths = path[7:].split('/')
         houshold_id = paths.pop(0)
         if paths != []:
             for household in self.households:

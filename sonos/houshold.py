@@ -1,4 +1,6 @@
 import threading
+from typing import Optional, List
+
 from sonos.favourite import Favourite
 from sonos.group import Group
 from sonos.player import Player
@@ -8,23 +10,18 @@ from sonos.playlist import Playlist
 class Household:
 
     def __init__ (self, id, mySonos):
-        self.group_and_player_lock = threading.RLock()
         self.id = id
-        self.groups = []
-        self.players = []
-        self.favourites = []
+        self.groups: List[Group] = []
+        self.players: List[Player] = []
+        self.favourites: List[Favourite] = []
         self.favourites_id = None
-        self.playlists = []
+        self.playlists: List[Playlist] = []
         self.playlists_id = None
         self.mySonos = mySonos
 
     def pause_all_groups (self):
-        self.group_and_player_lock.acquire()
-        try:
-            for group in self.groups:
-                group.pause()
-        finally:
-            self.group_and_player_lock.release()
+        for group in self.groups:
+            group.pause()
 
     def create_group (self, player_ids, group_providing=""):
         payload = {
@@ -51,28 +48,23 @@ class Household:
                              self.id))
 
     def get_groups_and_players (self):
-
         r = self.mySonos._get_request_to_sonos('/households/' + self.id + '/groups')
         res = r.json()
         self.update_groups_and_players(res)
-        return self
 
     def update_groups_and_players (self, data):
-        self.group_and_player_lock.acquire()
-        try:
-            self.groups.clear()
-            self.players.clear()
-            for player in data['players']:
-                self.players.append(Player(player['id'], player['name'], player['apiVersion'], player['deviceIds']
-                                           , player['softwareVersion'],
-                                           player['capabilities'], self.mySonos))
-            for group in data['groups']:
-                self.groups.append(
-                        Group(group['id'], group['name'], group['coordinatorId'], group['playbackState'],
-                              group['playerIds'],
-                              self.mySonos))
-        finally:
-            self.group_and_player_lock.release()
+
+        self.groups.clear()
+        self.players.clear()
+        for player in data['players']:
+            self.players.append(Player(player['id'], player['name'], player['apiVersion'], player['deviceIds']
+                                       , player['softwareVersion'],
+                                       player['capabilities'], self.mySonos))
+        for group in data['groups']:
+            self.groups.append(
+                    Group(group['id'], group['name'], group['coordinatorId'], group['playbackState'],
+                          group['playerIds'],
+                          self.mySonos))
 
     def subscribe (self):
         self._subscribe()
@@ -118,45 +110,37 @@ class Household:
         elif namespace == "groups":
             self.update_groups_and_players(data)
 
-    def find_player_by_id (self, id):
+    def find_player_by_id (self, id) -> Optional[Player]:
         for player in self.players:
             if player.id == id:
                 return player
         return None
 
-    def find_player_by_name (self, name):
+    def find_player_by_name (self, name: str) -> Optional[Player]:
         for player in self.players:
             if player.name == name:
                 return player
         return None
 
-    def find_group_by_name (self, name):
-        self.group_and_player_lock.acquire()
-        try:
-            for group in self.groups:
-                if group.name == name:
-                    return group
-            return None
-        finally:
-            self.group_and_player_lock.release()
+    def find_group_by_name (self, name: str) -> Optional[Group]:
+        for group in self.groups:
+            if group.name == name:
+                return group
+        return None
 
-    def find_group_by_id (self, id):
-        self.group_and_player_lock.acquire()
-        try:
-            for group in self.groups:
-                if group.id == id:
-                    return group
-            return None
-        finally:
-            self.group_and_player_lock.release()
+    def find_group_by_id (self, id) -> Optional[Group]:
+        for group in self.groups:
+            if group.id == id:
+                return group
+        return None
 
-    def find_favourite_by_name (self, name):
+    def find_favourite_by_name (self, name) -> Optional[Favourite]:
         for favourite in self.favourites:
             if favourite.name == name:
                 return favourite
         return None
 
-    def find_favourite_by_id (self, id):
+    def find_favourite_by_id (self, id) -> Optional[Favourite]:
         for favourite in self.favourites:
             if favourite.id == id:
                 return favourite
