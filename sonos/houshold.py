@@ -1,4 +1,4 @@
-import threading
+
 from typing import Optional, List
 
 from sonos.favourite import Favourite
