@@ -10,7 +10,7 @@ setup(
         author_email='robin.schoch@fhnw.ch',
         keywords=['sonos'],
         url='https://github.com/faqnet/sonos-rest-api-wrapper',
-        download_url='',
+        download_url='https://github.com/faqnet/sonos-rest-api-wrapper/archive/v01.tar.gz',
         install_requires=[
             'validators',
             'beautifulsoup4',
