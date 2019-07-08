@@ -8,7 +8,7 @@ class Session:
         self.mySonos = mySonos
 
     def create_session (self):
-        print("sdaf")
+        return
 
     def load_cloud_queue (self, queue_base_url, item_id="", play_on_completion=True, position_millis=0,
                           queueVersion=None, useHttpAuthorizationForMedia=False):
