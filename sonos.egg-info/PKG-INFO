@@ -1,0 +1,11 @@
+Metadata-Version: 1.0
+Name: sonos
+Version: 0.0.1
+Summary: a pip-installable package example
+Home-page: https://github.com/faqnet/sonos-rest-api-wrapper
+Author: Robin Schoch
+Author-email: robin.schoch@fhnw.ch
+License: MIT
+Description: UNKNOWN
+Keywords: sonos
+Platform: UNKNOWN
