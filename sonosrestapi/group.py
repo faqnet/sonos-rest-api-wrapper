@@ -1,6 +1,6 @@
 from typing import List, Dict
 
-from sonos.player import Player
+from sonosrestapi.player import Player
 
 
 

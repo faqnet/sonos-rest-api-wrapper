@@ -20,10 +20,5 @@ class Audioclip:
             body['streamUrl'] = self.stream_url
         self.mySonos._post_request_to_sonos('/players/' + self.player_id + '/audioClip', body)
 
-    '''    
-    Not implemented yet on sonos
-    def cancel_audioclip(self):
-                self.mySonos._delete_request_to_sonos('/players/' + self.player_id + '/audioClip/' + self.id)
-
-    '''
-
+    def cancel_audioclip (self):
+        self.mySonos._delete_request_to_sonos('/players/' + self.player_id + '/audioClip/' + self.id)

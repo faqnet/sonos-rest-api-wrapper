@@ -1,6 +1,6 @@
 from typing import List, Dict
 
-from sonos.audioclip import Audioclip
+from sonosrestapi.audioclip import Audioclip
 
 
 class Player:

@@ -1,20 +1,19 @@
 from distutils.core import setup
 
 setup(
-        name='sonos-rest-api-wrapper',
-        version='0.0.4',
+        name='sonosrestapi',
+        version='0.0.2',
         description='sonos rest api wrapper',
         license='MIT',
-        packages=['sonos-rest-api-wrapper'],
-        author='Robin Schoch',
+        packages=['sonosrestapi'],
+        author='Fagnet',
         author_email='robin.schoch@fhnw.ch',
         keywords=['sonos'],
         url='https://github.com/faqnet/sonos-rest-api-wrapper',
-        download_url='https://github.com/faqnet/sonos-rest-api-wrapper/archive/v01.tar.gz',
+        download_url='https://github.com/faqnet/sonos-rest-api-wrapper/archive/0.0.4.tar.gz',
         install_requires=[
             'typing',
-            'requests',
-            'logging'
+            'requests'
             ],
         classifiers=[
             'Development Status :: 3 - Alpha',

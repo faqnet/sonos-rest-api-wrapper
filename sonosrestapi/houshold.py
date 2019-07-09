@@ -1,10 +1,10 @@
 
 from typing import Optional, List
 
-from sonos.favourite import Favourite
-from sonos.group import Group
-from sonos.player import Player
-from sonos.playlist import Playlist
+from sonosrestapi.favourite import Favourite
+from sonosrestapi.group import Group
+from sonosrestapi.player import Player
+from sonosrestapi.playlist import Playlist
 
 
 class Household:

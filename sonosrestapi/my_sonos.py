@@ -1,8 +1,8 @@
 import json
 from typing import List
 import requests
-from sonos.houshold import Household
-import logging
+from sonosrestapi.houshold import Household
+
 
 
 class My_sonos:
@@ -94,7 +94,8 @@ class My_sonos:
                 return self._post_request_to_sonos_without_body(url)
             else:
                 # raise err
-                logging.error(err)
+                # logging.error(err)
+                print("errpr")
 
     def _post_request_to_sonos (self, url, body):
         try:
@@ -107,7 +108,8 @@ class My_sonos:
                 return self._post_request_to_sonos(url, body)
             else:
                 # raise err
-                logging.error(err)
+                # logging.error(err)
+                print("errpr")
 
     def _get_request_to_sonos (self, url):
         try:
@@ -120,7 +122,8 @@ class My_sonos:
                 return self._get_request_to_sonos(url)
             else:
                 # raise err
-                logging.error(err)
+                # logging.error(err)
+                print("errpr")
 
     def _delete_request_to_sonos (self, url):
         try:
@@ -133,7 +136,8 @@ class My_sonos:
                 return self._delete_request_to_sonos(url)
             else:
                 # raise err
-                logging.error(err)
+                # logging.error(err)
+                print("errpr")
 
     def to_dict (self):
         return {
