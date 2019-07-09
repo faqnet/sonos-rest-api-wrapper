@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
         name='sonos-rest-api-wrapper',
-        version='0.0.1',
+        version='0.0.4',
         description='sonos rest api wrapper',
         license='MIT',
         packages=['sonos-rest-api-wrapper'],
@@ -12,11 +12,8 @@ setup(
         url='https://github.com/faqnet/sonos-rest-api-wrapper',
         download_url='https://github.com/faqnet/sonos-rest-api-wrapper/archive/v01.tar.gz',
         install_requires=[
-            'validators',
-            'beautifulsoup4',
             'typing',
             'requests',
-            'json',
             'logging'
             ],
         classifiers=[

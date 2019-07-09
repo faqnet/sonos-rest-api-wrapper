@@ -29,7 +29,7 @@ class My_sonos:
         for household in res['households']:
             self.households.append(Household(household['id'], self))
 
-    def get_household(self) -> Household:
+    def get_household (self) -> Household:
         return self.households[0]
 
     def add_callback (self, callback, path: str):
@@ -80,7 +80,7 @@ class My_sonos:
         self._save_new_config(self.to_dict())
 
     def _save_new_config (self, new_config):
-        with open('config.json', 'w') as outfile:
+        with open(self.config_path, 'w') as outfile:
             json.dump(new_config, outfile)
 
     def _post_request_to_sonos_without_body (self, url):
@@ -93,7 +93,7 @@ class My_sonos:
                 self.refresh_token()
                 return self._post_request_to_sonos_without_body(url)
             else:
-                #raise err
+                # raise err
                 logging.error(err)
 
     def _post_request_to_sonos (self, url, body):
@@ -106,7 +106,7 @@ class My_sonos:
                 self.refresh_token()
                 return self._post_request_to_sonos(url, body)
             else:
-                #raise err
+                # raise err
                 logging.error(err)
 
     def _get_request_to_sonos (self, url):
@@ -119,7 +119,7 @@ class My_sonos:
                 self.refresh_token()
                 return self._get_request_to_sonos(url)
             else:
-                #raise err
+                # raise err
                 logging.error(err)
 
     def _delete_request_to_sonos (self, url):
@@ -132,7 +132,7 @@ class My_sonos:
                 self.refresh_token()
                 return self._delete_request_to_sonos(url)
             else:
-                #raise err
+                # raise err
                 logging.error(err)
 
     def to_dict (self):
