@@ -1,4 +1,3 @@
-
 from typing import Optional, List
 
 from sonosrestapi.favourite import Favourite
@@ -53,7 +52,6 @@ class Household:
         self.update_groups_and_players(res)
 
     def update_groups_and_players (self, data):
-
         self.groups.clear()
         self.players.clear()
         for player in data['players']:
@@ -144,5 +142,16 @@ class Household:
         for favourite in self.favourites:
             if favourite.id == id:
                 return favourite
+        return None
 
+    def find_playlist_by_name (self, name) -> Optional[Playlist]:
+        for playlist in self.playlists:
+            if playlist.name == name:
+                return playlist
+        return None
+
+    def find_playlist_by_id (self, id) -> Optional[Playlist]:
+        for playlist in self.playlists:
+            if playlist.id == id:
+                return playlist
         return None

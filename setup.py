@@ -1,8 +1,8 @@
-from distutils.core import setup
+from setuptools import setup
 
 setup(
         name='sonosrestapi',
-        version='0.0.2',
+        version='0.0.4',
         description='sonos rest api wrapper',
         license='MIT',
         packages=['sonosrestapi'],

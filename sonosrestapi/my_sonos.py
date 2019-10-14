@@ -29,8 +29,8 @@ class My_sonos:
         for household in res['households']:
             self.households.append(Household(household['id'], self))
 
-    def get_household (self) -> Household:
-        return self.households[0]
+    def get_household (self, index=0) -> Household:
+        return self.households[index]
 
     def add_callback (self, callback, path: str):
         '''
