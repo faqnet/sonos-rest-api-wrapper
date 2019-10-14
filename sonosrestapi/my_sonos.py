@@ -14,7 +14,10 @@ class My_sonos:
         self.households: List[Household] = []
         self.__bearer_token = bearer_token
         self.base_url = base_url
-        self.base_header = {"Authorization": "Bearer " + self.__token}
+        self.base_header = {
+            "Authorization": "Bearer " + self.__token,
+            "Content-Type" : "application/json"
+            }
         self.config_path = path
         self.app_id = app_id
         self.callback = None
