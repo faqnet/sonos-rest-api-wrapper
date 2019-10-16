@@ -79,7 +79,10 @@ class My_sonos:
         res = r.json()
         self.__token = res['access_token']
         self.__refresh_token = res['refresh_token']
-        self.base_header = {"Authorization": "Bearer " + self.__token}
+        self.base_header = {
+            "Authorization": "Bearer " + self.__token,
+            "Content-Type" : "application/json"
+            }
         self._save_new_config(self.to_dict())
 
     def _save_new_config (self, new_config):
