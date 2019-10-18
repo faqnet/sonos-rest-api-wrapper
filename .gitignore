@@ -1,6 +1,6 @@
 /config.json
 /.idea/*
-/__pycache__
+*/__pycache__
 /mysonoshuealarm-firebase-adminsdk-xrp0o-b0eabfa86c.json
 /firebase_config.json
 /sonos/__pycache__/

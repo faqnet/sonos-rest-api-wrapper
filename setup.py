@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
         name='sonosrestapi',
-        version='0.0.4',
+        version='0.0.6',
         description='sonos rest api wrapper',
         license='MIT',
         packages=['sonosrestapi'],
